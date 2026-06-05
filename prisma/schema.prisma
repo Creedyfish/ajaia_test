@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String      @id @default(cuid())
+  name      String
+  email     String      @unique
+  password  String
+  createdAt DateTime    @default(now())
+
+  documents Document[]  @relation("OwnedDocuments")
+  sharedWith DocShare[]
+}
+
+model Document {
+  id        String      @id @default(cuid())
+  title     String      @default("Untitled Document")
+  content   Json        @default("{}")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  ownerId   String
+  owner     User        @relation("OwnedDocuments", fields: [ownerId], references: [id])
+
+  shares    DocShare[]
+}
+
+model DocShare {
+  id        String      @id @default(cuid())
+  role      Role        @default(VIEWER)
+  createdAt DateTime    @default(now())
+
+  docId     String
+  document  Document    @relation(fields: [docId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([docId, userId])
+}
+
+enum Role {
+  VIEWER
+  EDITOR
+}
